@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>C Wellness Care Tracker | ระบบรายงานอาการคนไข้ผ่าน LINE</title>
 
   <!-- Google Fonts: Prompt -->
@@ -1360,6 +1363,25 @@
      * ========================================================================
      */
     async function initializeLiffAndApp() {
+      const manualOverride = getManualAccountOverride();
+      const savedSession = getLocalSession();
+
+      // กรณีผู้ใช้กดปุ่ม "ออก" เพื่อสลับบัญชีทดสอบ ให้เปิดหน้าเข้าสู่ระบบ/ลงทะเบียน
+      if (manualOverride === "LOGGED_OUT") {
+        lineProfile.userId = getOrCreateBrowserUserId();
+        lineProfile.displayName = "เข้าใช้งานผ่านเว็บเบราว์เซอร์";
+        routeViewByAuthState({ authState: "UNREGISTERED", user: null });
+        return;
+      }
+
+      // กรณีผู้ใช้ล็อกอินด้วยเบอร์โทรศัพท์หรือสลับเข้าบัญชีที่ระบุไว้ ให้ใช้บัญชีนั้นทันที (ไม่โดนทับด้วย LINE หลัก)
+      if (manualOverride === "ACTIVE" && savedSession && savedSession.userId) {
+        lineProfile.userId = savedSession.userId;
+        lineProfile.displayName = savedSession.displayName || "ผู้ใช้งานระบบ";
+        await refreshUserContext();
+        return;
+      }
+
       try {
         // ตั้ง Timeout 3.5 วินาทีสำหรับ liff.init เพื่อไม่ให้หน้าเว็บค้างหากเปิดใน Google Apps Script Iframe บน PC
         await Promise.race([
@@ -1398,7 +1420,6 @@
       }
 
       // กรณีเปิดผ่าน Web Browser (เช่น Microsoft Edge / Chrome บนคอมพิวเตอร์) ที่ liff.login() ถูกบล็อกโดย Iframe
-      const savedSession = getLocalSession();
       if (savedSession && savedSession.userId) {
         lineProfile.userId = savedSession.userId;
         lineProfile.displayName = savedSession.displayName || "ผู้ใช้งานระบบ";
@@ -1410,6 +1431,24 @@
       lineProfile.userId = getOrCreateBrowserUserId();
       lineProfile.displayName = "เข้าใช้งานผ่านเว็บเบราว์เซอร์";
       routeViewByAuthState({ authState: "UNREGISTERED", user: null });
+    }
+
+    function setManualAccountOverride(mode) {
+      try {
+        if (!mode) {
+          localStorage.removeItem("cwellness_manual_override");
+        } else {
+          localStorage.setItem("cwellness_manual_override", mode);
+        }
+      } catch (e) {}
+    }
+
+    function getManualAccountOverride() {
+      try {
+        return localStorage.getItem("cwellness_manual_override") || "";
+      } catch (e) {
+        return "";
+      }
     }
 
     function saveLocalSession(userId, displayName) {
@@ -1429,9 +1468,9 @@
       }
     }
 
-    function getOrCreateBrowserUserId() {
+    function getOrCreateBrowserUserId(forceNew) {
       try {
-        let bid = localStorage.getItem("cwellness_browser_uid");
+        let bid = forceNew ? "" : localStorage.getItem("cwellness_browser_uid");
         if (!bid) {
           bid = "WEB-" + Math.random().toString(36).substring(2, 10).toUpperCase();
           localStorage.setItem("cwellness_browser_uid", bid);
@@ -1447,7 +1486,8 @@
         localStorage.removeItem("cwellness_session_user_id");
         localStorage.removeItem("cwellness_session_name");
       } catch (e) {}
-      lineProfile.userId = getOrCreateBrowserUserId();
+      setManualAccountOverride("LOGGED_OUT");
+      lineProfile.userId = getOrCreateBrowserUserId(true);
       lineProfile.displayName = "เข้าใช้งานผ่านเว็บเบราว์เซอร์";
       document.getElementById("btnLogoutHeader").classList.add("hidden");
       hideGlobalAlert();
@@ -1531,7 +1571,7 @@
       }
 
       // กรณีที่ 3: สถานะ ACTIVE -> แสดงหน้าจอตามบทบาท
-      const role = state.user.role;
+      const role = String(state.user.role || "").trim().toUpperCase();
       badgeEl.textContent = role;
       badgeEl.classList.remove("hidden");
       subtitleEl.textContent = state.user.full_name;
@@ -1555,6 +1595,18 @@
     }
 
     function showOnlyView(viewId) {
+      // บังคับให้พนักงานเฝ้าไข้ (CAREGIVER) ที่ยังไม่ได้กรอกข้อมูลประวัติพนักงานครั้งแรก แสดงหน้า viewCaregiverOnboarding เสมอ
+      if (
+        viewId === "viewCaregiver" &&
+        appState &&
+        appState.user &&
+        String(appState.user.role || "").trim().toUpperCase() === "CAREGIVER" &&
+        !isCaregiverProfileCompletedClient(appState.user)
+      ) {
+        populateCaregiverOnboardingForm(appState.user);
+        viewId = "viewCaregiverOnboarding";
+      }
+
       const views = [
         "viewLoading",
         "viewRegister",
@@ -1585,7 +1637,8 @@
 
     function isCaregiverProfileCompletedClient(userObj) {
       if (!userObj) return false;
-      if (userObj.role !== "CAREGIVER") return true;
+      const roleUpper = String(userObj.role || "").trim().toUpperCase();
+      if (roleUpper !== "CAREGIVER") return true;
       if (userObj.profile_completed === true) return true;
       const recordedAt = String(userObj["วันเวลาที่บันทึกข้อมูลพนักงาน"] || "").trim();
       const hasCore = Boolean(
@@ -1869,6 +1922,7 @@
         if (result.status === "success" && result.userProfile) {
           lineProfile.userId = result.userProfile.userId;
           lineProfile.displayName = result.userProfile.displayName;
+          setManualAccountOverride("ACTIVE");
           saveLocalSession(lineProfile.userId, lineProfile.displayName);
           showGlobalAlert("✅ ยินดีต้อนรับ คุณ" + lineProfile.displayName, "success");
           appState = result.data;
@@ -1916,6 +1970,7 @@
           } else {
             lineProfile.displayName = fullName;
           }
+          setManualAccountOverride("ACTIVE");
           saveLocalSession(lineProfile.userId, lineProfile.displayName);
           showGlobalAlert("✅ " + result.message, "success");
           showSaveSuccessModal("บันทึกเรียบร้อย", result.message || "บันทึกข้อมูลลงทะเบียนเรียบร้อยแล้ว");
@@ -2765,9 +2820,19 @@
               </details>
             `;
           } else {
+            const testBtnHtml = u.status === "ACTIVE"
+              ? `<button
+                   type="button"
+                   onclick="switchToUserAccountForOnboarding('${escapeHtml(u.user_id)}', '${escapeHtml(u.full_name)}')"
+                   class="mt-1.5 w-full py-1.5 px-2.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-[11px] shadow-sm transition"
+                 >
+                   ✍️ สลับเข้าบัญชีนี้เพื่อกรอกข้อมูลพนักงานครั้งแรก
+                 </button>`
+              : "";
             caregiverProfileHtml = `
               <div class="bg-amber-50/70 rounded-xl border border-amber-200/80 px-3 py-2 text-[11px] text-amber-800 font-medium">
-                ⏳ รอพนักงานกรอกข้อมูลประวัติและเอกสารเมื่อเข้าใช้งานระบบครั้งแรกหลังอนุมัติ ACTIVE
+                <div>⏳ รอพนักงานกรอกข้อมูลประวัติและเอกสารเมื่อเข้าใช้งานระบบครั้งแรกหลังอนุมัติ ACTIVE</div>
+                ${testBtnHtml}
               </div>
             `;
           }
@@ -2880,7 +2945,11 @@
           showGlobalAlert("✅ อัปเดตสิทธิ์ผู้ใช้งานเรียบร้อยแล้ว", "success");
           showSaveSuccessModal("บันทึกเรียบร้อย", "อัปเดตสิทธิ์ผู้ใช้งานเรียบร้อยแล้ว");
           appState = res.data;
-          populateAdminView(appState);
+          if (appState && appState.user && String(appState.user.role || "").trim().toUpperCase() !== "ADMIN") {
+            routeViewByAuthState(appState);
+          } else {
+            populateAdminView(appState);
+          }
         } else {
           markUserPermissionDirty(targetUserId);
           btn.textContent = "💾 บันทึกสิทธิ์ผู้ใช้งาน";
@@ -2891,6 +2960,16 @@
         btn.textContent = "💾 บันทึกสิทธิ์ผู้ใช้งาน";
         showGlobalAlert("เกิดข้อผิดพลาดในการอัปเดตผู้ใช้งาน", "error");
       }
+    }
+
+    async function switchToUserAccountForOnboarding(targetUserId, targetFullName) {
+      hideGlobalAlert();
+      lineProfile.userId = targetUserId;
+      lineProfile.displayName = targetFullName || "พนักงานเฝ้าไข้";
+      setManualAccountOverride("ACTIVE");
+      saveLocalSession(lineProfile.userId, lineProfile.displayName);
+      await refreshUserContext();
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function renderAdminAccessSection(patients, users, accessList) {
@@ -3770,8 +3849,8 @@
         });
       }
 
-      const url = `${GAS_WEB_APP_URL}?action=getUserContext&lineUserId=${encodeURIComponent(lineUserId)}`;
-      const res = await fetch(url, { method: "GET" });
+      const url = `${GAS_WEB_APP_URL}?action=getUserContext&lineUserId=${encodeURIComponent(lineUserId)}&_t=${Date.now()}`;
+      const res = await fetch(url, { method: "GET", cache: "no-store" });
       return await res.json();
     }
 
