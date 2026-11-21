@@ -27,9 +27,6 @@
     };
   </script>
 
-  <!-- LINE LIFF SDK v2 -->
-  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
   <style>
     body {
       font-family: 'Prompt', sans-serif;
@@ -1501,6 +1498,28 @@
     });
 
     /**
+     * โหลด LINE LIFF SDK แบบ Dynamic เฉพาะเมื่อมี Token จาก LINE LIFF Gateway จริง
+     * (หากเปิดลิงก์เว็บตรง จะไม่โหลด SDK เพื่อไม่ให้ SDK สั่ง Redirect ไป access.line.me แล้วติด 400 Bad Request)
+     */
+    function loadLiffSdk() {
+      return new Promise(function (resolve, reject) {
+        if (typeof liff !== "undefined") {
+          return resolve();
+        }
+        const s = document.createElement("script");
+        s.charset = "utf-8";
+        s.src = "https://static.line-scdn.net/liff/edge/2/sdk.js";
+        s.onload = function () {
+          resolve();
+        };
+        s.onerror = function () {
+          reject(new Error("FAILED_TO_LOAD_LIFF_SDK"));
+        };
+        document.head.appendChild(s);
+      });
+    }
+
+    /**
      * ========================================================================
      * 2. เชื่อมต่อ LINE LIFF SDK และดึงสิทธิ์ผู้ใช้งานจริงจากแท็บ Users
      * (เมื่อกดลิงก์จากใน LINE ที่ผูก LINE User ID จริงไว้ จะเข้าสู่ระบบอัตโนมัติทันที)
@@ -1534,18 +1553,20 @@
 
       const canSafelyInitLiff = hasHashTokens || hasOAuthCallback;
 
-      if (canSafelyInitLiff && typeof liff !== "undefined") {
+      if (canSafelyInitLiff) {
         try {
-          await Promise.race([
-            liff.init({ liffId: LIFF_ID }),
-            new Promise(function (_, reject) {
-              setTimeout(function () {
-                reject(new Error("LIFF_INIT_TIMEOUT"));
-              }, 3500);
-            })
-          ]);
+          await loadLiffSdk();
+          if (typeof liff !== "undefined") {
+            await Promise.race([
+              liff.init({ liffId: LIFF_ID }),
+              new Promise(function (_, reject) {
+                setTimeout(function () {
+                  reject(new Error("LIFF_INIT_TIMEOUT"));
+                }, 3500);
+              })
+            ]);
 
-          if (liff.isLoggedIn()) {
+            if (liff.isLoggedIn()) {
             const isInLineApp = (typeof liff.isInClient === "function" && liff.isInClient());
             const tabOverride = getManualAccountOverride();
             const savedSession = getLocalSession();
