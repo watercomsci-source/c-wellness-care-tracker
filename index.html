@@ -1503,14 +1503,7 @@
           })
         ]);
 
-        // หากเปิดจากในแอป LINE หรือโฮสต์บน GitHub Pages (ไม่ได้ซ้อนใน Iframe ของ Google) และยังไม่ได้ล็อกอิน ให้เข้าสู่ระบบ LINE อัตโนมัติทันที
-        const isInsideIframe = (window.self !== window.top);
-        if (typeof liff !== "undefined" && !liff.isLoggedIn() && !isInsideIframe) {
-          liff.login({ redirectUri: window.location.href });
-          return;
-        }
-
-        // กรณีล็อกอินผ่าน LINE LIFF สำเร็จ (เช่น กดลิงก์จากใน LINE หรือล็อกอินผ่าน GitHub Pages)
+        // กรณีล็อกอินผ่าน LINE LIFF สำเร็จ (เช่น เปิดผ่านลิงก์ https://liff.line.me/2012651780-NY19Q097 ในแอป LINE)
         if (typeof liff !== "undefined" && liff.isLoggedIn()) {
           const isInLineApp = (typeof liff.isInClient === "function" && liff.isInClient());
           const tabOverride = getManualAccountOverride();
