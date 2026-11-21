@@ -133,7 +133,7 @@
           </div>
           <div>
             <h2 class="text-base font-semibold text-slate-800">ลงทะเบียนเข้าใช้งานครั้งแรก</h2>
-            <p class="text-xs text-slate-400">สำหรับผู้ใช้งานใหม่ (หากสมัคร ADMIN คนแรก ระบบจะอนุมัติทันที)</p>
+            <p class="text-xs text-slate-400">สำหรับผู้ใช้งานใหม่</p>
           </div>
         </div>
 
@@ -1401,14 +1401,15 @@
             <p id="cgModalAge" class="text-xs font-bold text-slate-800 mt-0.5">-</p>
           </div>
           <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
-            <span class="text-[10px] text-slate-400 block">ประสบการณ์ทำงาน</span>
-            <p id="cgModalExperience" class="text-xs font-bold text-teal-700 mt-0.5">-</p>
+            <span class="text-[10px] text-slate-400 block">🎂 วัน เดือน ปีเกิด</span>
+            <p id="cgModalBirthDate" class="text-xs font-bold text-slate-800 mt-0.5">-</p>
           </div>
         </div>
 
+        <!-- ประสบการณ์ทำงาน (แยกขึ้นบรรทัดใหม่) -->
         <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-center justify-between">
-          <span class="text-slate-400">🎂 วัน เดือน ปีเกิด:</span>
-          <span id="cgModalBirthDate" class="font-semibold text-slate-800">-</span>
+          <span class="text-slate-500 font-semibold text-xs">💼 ประสบการณ์ทำงาน:</span>
+          <span id="cgModalExperience" class="text-xs font-bold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-lg border border-teal-200">-</span>
         </div>
 
         <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-1.5">
@@ -1521,6 +1522,78 @@
       >
         <span>✕</span>
         <span>ปิดหน้าต่าง</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- กล่องแสดงเอกสารพนักงานแบบป๊อปอับ (บัตรประชาชน / ใบอนุญาต / หน้าสมุดบัญชี) -->
+  <!-- ===================================================================== -->
+  <div
+    id="staffDocViewerModal"
+    onclick="if(event.target === this) closeStaffDocViewerModal()"
+    class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-between p-3 sm:p-5 transition-opacity select-none"
+  >
+    <!-- แถบหัวข้อ และปุ่มปิด -->
+    <div class="w-full max-w-3xl flex items-center justify-between text-white pb-3 border-b border-white/10 shrink-0">
+      <div class="flex items-center space-x-2.5">
+        <div id="staffDocModalIcon" class="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center text-base">
+          📄
+        </div>
+        <div>
+          <h3 id="staffDocModalTitle" class="text-xs sm:text-sm font-bold text-white">เอกสารพนักงาน</h3>
+          <p id="staffDocModalSubtitle" class="text-[10px] sm:text-xs text-slate-300">คลิกปุ่มปิด หรือคลิกพื้นที่ว่างเมื่อตรวจสอบเอกสารเสร็จสิ้น</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <a
+          id="staffDocModalExternalLink"
+          href="#"
+          target="_blank"
+          rel="noopener"
+          class="hidden sm:inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-xs transition border border-white/10"
+        >
+          <span>↗️</span>
+          <span>เปิดแท็บใหม่</span>
+        </a>
+        <button
+          type="button"
+          onclick="closeStaffDocViewerModal()"
+          class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-semibold text-xs transition border border-white/10"
+        >
+          <span>✕</span>
+          <span>ปิด</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- พื้นที่แสดงเอกสาร (รองรับทั้งรูปภาพ และ PDF / Google Drive) -->
+    <div class="w-full max-w-3xl flex-1 flex flex-col items-center justify-center p-2 min-h-0 relative my-auto">
+      <!-- 1. กรณีเป็นรูปภาพ -->
+      <img
+        id="staffDocModalImg"
+        src=""
+        alt="เอกสารพนักงาน"
+        class="hidden max-h-[68vh] sm:max-h-[72vh] max-w-full object-contain rounded-2xl shadow-2xl border border-white/15 bg-black/40"
+      />
+
+      <!-- 2. กรณีเป็นไฟล์ PDF หรือ Iframe Preview -->
+      <iframe
+        id="staffDocModalFrame"
+        src=""
+        class="hidden w-full h-[68vh] sm:h-[72vh] rounded-2xl border border-white/15 bg-white shadow-2xl"
+      ></iframe>
+    </div>
+
+    <!-- แถบด้านล่าง: ปุ่มปิดขนาดใหญ่ สะดวกสำหรับกดบนมือถือ -->
+    <div class="w-full max-w-3xl pt-3 border-t border-white/10 shrink-0 flex items-center justify-center">
+      <button
+        type="button"
+        onclick="closeStaffDocViewerModal()"
+        class="w-full sm:w-auto sm:min-w-[200px] py-2.5 px-6 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs shadow-lg transition border border-white/10 flex items-center justify-center space-x-2"
+      >
+        <span>✕</span>
+        <span>ปิดหน้าต่างเอกสาร</span>
       </button>
     </div>
   </div>
@@ -2024,11 +2097,11 @@
       if (doc.isPdf) {
         container.innerHTML = `
           <div class="flex items-center justify-between bg-white rounded-xl p-2.5 border border-emerald-200 text-xs">
-            <div class="flex items-center space-x-2.5 truncate">
+            <div class="flex items-center space-x-2.5 truncate cursor-pointer hover:opacity-80" onclick="openStaffDocViewerModal('${escapeHtml(doc.name)}', '${doc.base64}')" title="คลิกเพื่อดูตัวอย่างไฟล์">
               <span class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-sm shrink-0">PDF</span>
               <div class="truncate">
                 <p class="font-semibold text-slate-800 truncate">${escapeHtml(doc.name)}</p>
-                <p class="text-[10px] text-emerald-600 font-medium">✅ แนบไฟล์ PDF พร้อมอัปโหลด (${escapeHtml(sizeKb)})</p>
+                <p class="text-[10px] text-emerald-600 font-medium">✅ แนบไฟล์ PDF (แตะดูตัวอย่าง) (${escapeHtml(sizeKb)})</p>
               </div>
             </div>
             <button
@@ -2043,9 +2116,9 @@
       } else {
         container.innerHTML = `
           <div class="relative rounded-xl overflow-hidden border border-emerald-200 bg-white p-2 space-y-1.5">
-            <img src="${doc.base64}" alt="Document Preview" class="w-full max-h-48 object-contain rounded-lg bg-slate-50" />
+            <img src="${doc.base64}" alt="Document Preview" onclick="openStaffDocViewerModal('${escapeHtml(doc.name)}', '${doc.base64}')" class="w-full max-h-48 object-contain rounded-lg bg-slate-50 cursor-pointer hover:opacity-95" title="คลิกเพื่อดูภาพขยาย" />
             <div class="flex items-center justify-between text-[11px] px-1">
-              <span class="text-emerald-700 font-semibold truncate max-w-[200px]">✅ ${escapeHtml(doc.name)}</span>
+              <span class="text-emerald-700 font-semibold truncate max-w-[200px] cursor-pointer" onclick="openStaffDocViewerModal('${escapeHtml(doc.name)}', '${doc.base64}')">🔍 ${escapeHtml(doc.name)}</span>
               <button
                 type="button"
                 onclick="clearStaffDoc('${docType}')"
@@ -3040,14 +3113,18 @@
         if (u.role === "CAREGIVER") {
           const isCompleted = isCaregiverProfileCompletedClient(u);
           if (isCompleted) {
-            const idCardLink = u["สำเนาบัตรประชาชน"]
-              ? `<a href="${escapeHtml(u["สำเนาบัตรประชาชน"])}" target="_blank" rel="noopener" class="inline-flex items-center space-x-1 text-emerald-700 font-semibold underline hover:text-emerald-800"><span>🪪 เปิดดูสำเนาบัตรประชาชน</span></a>`
+            const idCardUrl = u["สำเนาบัตรประชาชน"] || "";
+            const licenseUrl = u["สำเนาใบอนุญาตหรือใบอบรมด้านพยาบาล"] || "";
+            const bankBookUrl = u["สำเนาหน้าสมุดบัญชี"] || "";
+
+            const idCardLink = idCardUrl
+              ? `<button type="button" onclick="openStaffDocViewerModal('สำเนาบัตรประชาชน', '${escapeHtml(idCardUrl)}')" class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-emerald-100/80 hover:bg-emerald-200 text-emerald-800 font-semibold text-[11px] border border-emerald-300 transition cursor-pointer shadow-sm"><span>🪪 สำเนาบัตรประชาชน</span></button>`
               : `<span class="text-slate-400">-</span>`;
-            const licenseLink = u["สำเนาใบอนุญาตหรือใบอบรมด้านพยาบาล"]
-              ? `<a href="${escapeHtml(u["สำเนาใบอนุญาตหรือใบอบรมด้านพยาบาล"])}" target="_blank" rel="noopener" class="inline-flex items-center space-x-1 text-teal-700 font-semibold underline hover:text-teal-800"><span>📜 เปิดดูสำเนาใบอนุญาต/ใบอบรม</span></a>`
+            const licenseLink = licenseUrl
+              ? `<button type="button" onclick="openStaffDocViewerModal('สำเนาใบอนุญาตหรือใบอบรมด้านพยาบาล', '${escapeHtml(licenseUrl)}')" class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-teal-100/80 hover:bg-teal-200 text-teal-800 font-semibold text-[11px] border border-teal-300 transition cursor-pointer shadow-sm"><span>📜 สำเนาใบอนุญาต/ใบอบรม</span></button>`
               : `<span class="text-slate-400">-</span>`;
-            const bankBookLink = u["สำเนาหน้าสมุดบัญชี"]
-              ? `<a href="${escapeHtml(u["สำเนาหน้าสมุดบัญชี"])}" target="_blank" rel="noopener" class="inline-flex items-center space-x-1 text-sky-700 font-semibold underline hover:text-sky-800"><span>🏦 เปิดดูสำเนาหน้าสมุดบัญชี</span></a>`
+            const bankBookLink = bankBookUrl
+              ? `<button type="button" onclick="openStaffDocViewerModal('สำเนาหน้าสมุดบัญชี', '${escapeHtml(bankBookUrl)}')" class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-sky-100/80 hover:bg-sky-200 text-sky-800 font-semibold text-[11px] border border-sky-300 transition cursor-pointer shadow-sm"><span>🏦 สำเนาหน้าสมุดบัญชี</span></button>`
               : `<span class="text-slate-400">-</span>`;
             const fullAddr = [
               u["บ้านเลขที่"],
@@ -3064,9 +3141,9 @@
                 </summary>
                 <div class="pt-2 mt-2 border-t border-emerald-200/60 space-y-1 text-[11px] text-slate-700">
                   <div><span class="text-slate-400">ชื่อเล่น:</span> <b>${escapeHtml(u["ชื่อเล่น"] || "-")}</b> | <span class="text-slate-400">อายุ:</span> <b>${escapeHtml(u["อายุ"] || "-")} ปี</b></div>
-                  <div><span class="text-slate-400">วันเดือนปีเกิด:</span> <b>${escapeHtml(u["วันเดือนปีเกิด"] || "-")}</b> | <span class="text-slate-400">ประสบการณ์:</span> <b>${escapeHtml(u["ประสบการณ์ทำงาน (ปี)"] || "-")} ปี</b></div>
+                  <div><span class="text-slate-400">วันเดือนปีเกิด:</span> <b>${escapeHtml(formatThaiBirthDate(u["วันเดือนปีเกิด"]))}</b> | <span class="text-slate-400">ประสบการณ์:</span> <b>${escapeHtml(u["ประสบการณ์ทำงาน (ปี)"] || "-")} ปี</b></div>
                   <div><span class="text-slate-400">ที่อยู่ปัจจุบัน:</span> <b>${escapeHtml(fullAddr || "-")}</b></div>
-                  <div class="pt-1 flex flex-wrap gap-3">
+                  <div class="pt-1.5 flex flex-wrap gap-2">
                     ${idCardLink}
                     ${licenseLink}
                     ${bankBookLink}
@@ -4131,17 +4208,7 @@
         ? (prof.experience_years + " ปี")
         : "-";
 
-      let dobDisplay = (prof && prof.birth_date && prof.birth_date !== "") ? prof.birth_date : "-";
-      if (dobDisplay !== "-") {
-        const parsedDob = new Date(dobDisplay);
-        if (!isNaN(parsedDob.getTime())) {
-          dobDisplay = parsedDob.toLocaleDateString("th-TH", {
-            year: "numeric",
-            month: "long",
-            day: "numeric"
-          });
-        }
-      }
+      const dobDisplay = formatThaiBirthDate(prof && prof.birth_date);
 
       document.getElementById("cgModalFullName").textContent = fullName;
       document.getElementById("cgModalNickname").textContent = nickname;
@@ -4246,9 +4313,144 @@
       }
     }
 
+    /**
+     * ========================================================================
+     * แปลงวันเดือนปีเกิดเป็น วัน เดือน ปี (พ.ศ.) แบบไม่มีเวลา เช่น "15 มกราคม 2538"
+     * ========================================================================
+     */
+    function formatThaiBirthDate(val) {
+      if (!val || val === "-" || String(val).trim() === "") return "-";
+      let str = String(val).trim();
+
+      // ตัดเวลาออกหากมี เช่น "2026-11-21T00:00:00.000Z" หรือ "15/01/2538 00:00:00"
+      if (str.indexOf("T") !== -1) {
+        str = str.split("T")[0].trim();
+      } else if (str.indexOf(" ") !== -1 && (str.indexOf(":") !== -1 || str.indexOf("/") !== -1 || str.indexOf("-") !== -1)) {
+        str = str.split(" ")[0].trim();
+      }
+
+      // หากเป็นรูปแบบ YYYY-MM-DD
+      const ymdMatch = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+      if (ymdMatch) {
+        let year = parseInt(ymdMatch[1], 10);
+        const month = parseInt(ymdMatch[2], 10);
+        const day = parseInt(ymdMatch[3], 10);
+        if (year < 2400) year += 543;
+        const thaiMonths = ["", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+        const monthName = thaiMonths[month] || month;
+        return `${day} ${monthName} ${year}`;
+      }
+
+      // หากเป็นรูปแบบ DD/MM/YYYY
+      const dmyMatch = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+      if (dmyMatch) {
+        const day = parseInt(dmyMatch[1], 10);
+        const month = parseInt(dmyMatch[2], 10);
+        let year = parseInt(dmyMatch[3], 10);
+        if (year < 2400) year += 543;
+        const thaiMonths = ["", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+        const monthName = thaiMonths[month] || month;
+        return `${day} ${monthName} ${year}`;
+      }
+
+      // ลอง parse เป็น Date object
+      const d = new Date(val);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString("th-TH", {
+          year: "numeric",
+          month: "long",
+          day: "numeric"
+        });
+      }
+
+      return str;
+    }
+
+    /**
+     * ========================================================================
+     * Popup Modal สำหรับดูเอกสารพนักงาน (สำเนาบัตรประชาชน / ใบอนุญาต / หน้าสมุดบัญชี)
+     * ========================================================================
+     */
+    function openStaffDocViewerModal(docTitle, fileUrl) {
+      if (!fileUrl || fileUrl === "-" || String(fileUrl).trim() === "") {
+        showGlobalAlert("ไม่พบไฟล์เอกสารนี้", "error");
+        return;
+      }
+
+      const modal = document.getElementById("staffDocViewerModal");
+      const titleEl = document.getElementById("staffDocModalTitle");
+      const iconEl = document.getElementById("staffDocModalIcon");
+      const extLink = document.getElementById("staffDocModalExternalLink");
+      const imgEl = document.getElementById("staffDocModalImg");
+      const frameEl = document.getElementById("staffDocModalFrame");
+
+      if (titleEl) titleEl.textContent = docTitle || "เอกสารพนักงาน";
+
+      let icon = "📄";
+      if (docTitle.indexOf("บัตรประชาชน") !== -1) icon = "🪪";
+      else if (docTitle.indexOf("ใบอนุญาต") !== -1 || docTitle.indexOf("ใบอบรม") !== -1) icon = "📜";
+      else if (docTitle.indexOf("สมุดบัญชี") !== -1) icon = "🏦";
+      if (iconEl) iconEl.textContent = icon;
+
+      if (extLink) {
+        extLink.href = fileUrl;
+      }
+
+      const isDataUrl = fileUrl.indexOf("data:") === 0;
+      const isPdfData = isDataUrl && fileUrl.indexOf("application/pdf") !== -1;
+      const isImageData = isDataUrl && fileUrl.indexOf("image/") !== -1;
+      const isPdfFile = /\.pdf($|\?)/i.test(fileUrl);
+
+      // รองรับ Google Drive preview
+      let previewUrl = fileUrl;
+      const driveMatch = fileUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || fileUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (driveMatch && driveMatch[1]) {
+        previewUrl = "https://drive.google.com/file/d/" + driveMatch[1] + "/preview";
+      }
+
+      if (isImageData || (!isPdfFile && !isPdfData && !driveMatch && /\.(jpg|jpeg|png|webp|gif)($|\?)/i.test(fileUrl))) {
+        if (imgEl) {
+          imgEl.src = fileUrl;
+          imgEl.classList.remove("hidden");
+        }
+        if (frameEl) {
+          frameEl.src = "";
+          frameEl.classList.add("hidden");
+        }
+      } else {
+        if (frameEl) {
+          frameEl.src = previewUrl;
+          frameEl.classList.remove("hidden");
+        }
+        if (imgEl) {
+          imgEl.src = "";
+          imgEl.classList.add("hidden");
+        }
+      }
+
+      if (modal) {
+        modal.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+      }
+    }
+
+    function closeStaffDocViewerModal() {
+      const modal = document.getElementById("staffDocViewerModal");
+      const frameEl = document.getElementById("staffDocModalFrame");
+      const imgEl = document.getElementById("staffDocModalImg");
+      if (frameEl) frameEl.src = "";
+      if (imgEl) imgEl.src = "";
+      if (modal) {
+        modal.classList.add("hidden");
+        document.body.style.overflow = "";
+      }
+    }
+
     window.addEventListener("keydown", function (e) {
       if (e.key === "Escape") {
         closeImageViewerModal();
+        closeStaffDocViewerModal();
+        closeCaregiverInfoModal();
       }
     });
 
