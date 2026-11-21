@@ -1487,53 +1487,75 @@
      * ========================================================================
      */
     async function initializeLiffAndApp() {
-      // ล้างค่าค้างเก่าใน localStorage เพื่อไม่ให้ขวางการเข้าสู่ระบบอัตโนมัติจาก LINE
+      // ล้างค่าค้างเก่าใน localStorage/sessionStorage ของ LIFF SDK ที่อาจสั่ง Redirect ไปหน้า 400 Bad Request
       try {
         localStorage.removeItem("cwellness_manual_override");
+        sessionStorage.removeItem(`LIFF_STORE:${LIFF_ID}:isSubsequentLiffApp`);
+        localStorage.removeItem(`LIFF_STORE:${LIFF_ID}:isSubsequentLiffApp`);
+        sessionStorage.removeItem(`LIFF_STORE:${LIFF_ID}:loginTmp`);
+        localStorage.removeItem(`LIFF_STORE:${LIFF_ID}:loginTmp`);
       } catch (e) {}
 
+      // ตรวจสอบว่าเปิดมาจากระบบ LINE LIFF ที่มี Token จริงหรือไม่
+      // (ป้องกันไม่ให้ LIFF SDK v2.32 สั่ง Redirect ไป access.line.me/liff/v1/authorize แล้วขึ้น 400 Bad Request เมื่อเปิดลิงก์ github.io โดยตรง)
+      const hashStr = window.location.hash || "";
+      const searchStr = window.location.search || "";
+      const hasHashTokens =
+        hashStr.indexOf("access_token=") !== -1 &&
+        hashStr.indexOf("feature_token=") !== -1;
+      const hasOAuthCallback =
+        searchStr.indexOf("code=") !== -1 &&
+        searchStr.indexOf("state=") !== -1;
+      let hasStoredTokens = false;
       try {
-        // ตั้ง Timeout 3.5 วินาทีสำหรับ liff.init เพื่อไม่ให้หน้าเว็บค้างหากเปิดใน Google Apps Script Iframe บน PC
-        await Promise.race([
-          liff.init({ liffId: LIFF_ID }),
-          new Promise(function (_, reject) {
-            setTimeout(function () {
-              reject(new Error("LIFF_INIT_TIMEOUT"));
-            }, 3500);
-          })
-        ]);
+        hasStoredTokens = Boolean(
+          sessionStorage.getItem(`LIFF_STORE:${LIFF_ID}:accessToken`) &&
+          sessionStorage.getItem(`LIFF_STORE:${LIFF_ID}:featureToken`)
+        );
+      } catch (e) {}
 
-        // กรณีล็อกอินผ่าน LINE LIFF สำเร็จ (เช่น เปิดผ่านลิงก์ https://liff.line.me/2012651780-NY19Q097 ในแอป LINE)
-        if (typeof liff !== "undefined" && liff.isLoggedIn()) {
-          const isInLineApp = (typeof liff.isInClient === "function" && liff.isInClient());
-          const tabOverride = getManualAccountOverride();
-          const savedSession = getLocalSession();
+      const canSafelyInitLiff = hasHashTokens || hasOAuthCallback || hasStoredTokens;
 
-          // หากไม่ได้เปิดในแอป LINE และในแท็บปัจจุบันเพิ่งสลับบัญชีด้วยเบอร์โทรศัพท์ ให้คงบัญชีที่สลับไว้ในแท็บนั้น
-          if (!isInLineApp && tabOverride === "ACTIVE" && savedSession && savedSession.userId) {
-            lineProfile.userId = savedSession.userId;
-            lineProfile.displayName = savedSession.displayName || "ผู้ใช้งานระบบ";
+      if (canSafelyInitLiff && typeof liff !== "undefined") {
+        try {
+          await Promise.race([
+            liff.init({ liffId: LIFF_ID }),
+            new Promise(function (_, reject) {
+              setTimeout(function () {
+                reject(new Error("LIFF_INIT_TIMEOUT"));
+              }, 3500);
+            })
+          ]);
+
+          if (liff.isLoggedIn()) {
+            const isInLineApp = (typeof liff.isInClient === "function" && liff.isInClient());
+            const tabOverride = getManualAccountOverride();
+            const savedSession = getLocalSession();
+
+            if (!isInLineApp && tabOverride === "ACTIVE" && savedSession && savedSession.userId) {
+              lineProfile.userId = savedSession.userId;
+              lineProfile.displayName = savedSession.displayName || "ผู้ใช้งานระบบ";
+              await refreshUserContext();
+              return;
+            }
+
+            const profile = await liff.getProfile();
+            lineProfile.userId = profile.userId;
+            lineProfile.displayName = profile.displayName;
+            lineProfile.pictureUrl = profile.pictureUrl || "";
+
+            if (lineProfile.pictureUrl) {
+              document.getElementById("headerAvatar").src = lineProfile.pictureUrl;
+            }
+
+            setManualAccountOverride("");
+            saveLocalSession(lineProfile.userId, lineProfile.displayName);
             await refreshUserContext();
             return;
           }
-
-          // เมื่อกดลิงก์เข้าจากใน LINE (หรือเข้าใช้งานปกติ) ดึง LINE User ID จริง (U...) และเข้าสู่ระบบอัตโนมัติทันที
-          const profile = await liff.getProfile();
-          lineProfile.userId = profile.userId;
-          lineProfile.displayName = profile.displayName;
-          lineProfile.pictureUrl = profile.pictureUrl || "";
-
-          if (lineProfile.pictureUrl) {
-            document.getElementById("headerAvatar").src = lineProfile.pictureUrl;
-          }
-
-          setManualAccountOverride("");
-          saveLocalSession(lineProfile.userId, lineProfile.displayName);
-          await refreshUserContext();
-          return;
+        } catch (err) {
+          console.warn("LIFF Init Fallback:", err.message);
         }
-      } catch (err) {
-        console.warn("LIFF Browser Mode Fallback:", err.message);
       }
 
       // กรณีเปิดผ่าน Web Browser (เช่น บนคอมพิวเตอร์ใน Iframe ของ Google Apps Script)
