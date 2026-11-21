@@ -2321,23 +2321,40 @@
       const filterEl = document.getElementById("cgHistoryFilterPatient");
 
       selectEl.innerHTML = '<option value="" selected>-- เลือกรายชื่อคนไข้ --</option>';
-      filterEl.innerHTML = '<option value="ALL">แสดงคนไข้ทั้งหมด</option>';
 
       const activePatients = (state.patients || []).filter(function (p) {
         return p.patient_status === "ACTIVE";
       });
 
+      // ฟอร์มบันทึกอาการ: พนักงานสามารถเลือกชื่อคนไข้คนใดก็ได้ที่ ACTIVE
       activePatients.forEach(function (p) {
         const opt = document.createElement("option");
         opt.value = p.patient_id;
         opt.textContent = `${p.full_name} (${p.patient_id}) - ${p.care_location || "ไม่ระบุห้อง"}`;
         selectEl.appendChild(opt);
-
-        const fOpt = document.createElement("option");
-        fOpt.value = p.patient_id;
-        fOpt.textContent = `${p.full_name} (${p.patient_id})`;
-        filterEl.appendChild(fOpt);
       });
+
+      // ตัวกรองประวัติย้อนหลัง:
+      // หากเป็น CAREGIVER ให้แสดงเฉพาะคนไข้ที่ตนเองเคยรายงาน (หากยังไม่เคยรายงานใครเลย จะแสดงว่ายังไม่มีประวัติ)
+      const isCaregiverUser = (state.user && state.user.role === "CAREGIVER");
+      const reportedIds = state.reportedPatientIds || [];
+      const reportedPatients = activePatients.filter(function (p) {
+        return reportedIds.indexOf(p.patient_id) !== -1 || (state.reports || []).some(function (r) { return r.patient_id === p.patient_id; });
+      });
+
+      filterEl.innerHTML = "";
+      if (isCaregiverUser && reportedPatients.length === 0) {
+        filterEl.innerHTML = '<option value="ALL">ยังไม่มีประวัติคนไข้ที่เคยรายงาน</option>';
+      } else {
+        filterEl.innerHTML = '<option value="ALL">แสดงคนไข้ที่เคยรายงานทั้งหมด</option>';
+        const filterPatients = isCaregiverUser ? reportedPatients : activePatients;
+        filterPatients.forEach(function (p) {
+          const fOpt = document.createElement("option");
+          fOpt.value = p.patient_id;
+          fOpt.textContent = `${p.full_name} (${p.patient_id})`;
+          filterEl.appendChild(fOpt);
+        });
+      }
 
       document.getElementById("selectedPatientInfoCard").classList.add("hidden");
       renderCaregiverHistory();
@@ -3906,17 +3923,33 @@
       container.innerHTML = "";
 
       if (!reports || reports.length === 0) {
+        let emptyMessage = "ยังไม่มีการบันทึกรายงานอาการประจำวัน";
+        let emptySubtext = "";
+        let buttonText = "ย้อนกลับ";
+
+        if (containerId === "cgHistoryTimeline") {
+          const isCaregiver = (appState && appState.user && appState.user.role === "CAREGIVER");
+          if (isCaregiver) {
+            emptyMessage = "ยังไม่มีประวัติการรายงานอาการคนไข้";
+            emptySubtext = "<p class='text-[11px] text-slate-400'>เมื่อเริ่มบันทึกรายงานอาการคนไข้ ระบบจะแสดงประวัติย้อนหลังของคนไข้ที่คุณเคยรายงานทันที</p>";
+            buttonText = "📝 ไปที่หน้าบันทึกอาการคนไข้";
+          }
+        }
+
         container.innerHTML = `
           <div class="bg-white rounded-2xl p-8 text-center border border-slate-100 space-y-3">
-            <p class="text-xs text-slate-500 font-medium">ยังไม่มีการบันทึกรายงานอาการประจำวัน</p>
+            <div class="w-12 h-12 rounded-2xl bg-slate-50 text-slate-400 mx-auto flex items-center justify-center text-xl">📋</div>
+            <div class="space-y-1">
+              <p class="text-xs text-slate-700 font-semibold">${emptyMessage}</p>
+              ${emptySubtext}
+            </div>
             <div>
               <button
                 type="button"
                 onclick="handleBackWhenNoReport('${containerId}')"
-                class="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition"
+                class="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-xs border border-emerald-200 transition shadow-sm"
               >
-                <span>←</span>
-                <span>ย้อนกลับ</span>
+                <span>${buttonText}</span>
               </button>
             </div>
           </div>
