@@ -1451,6 +1451,81 @@
   </div>
 
   <!-- ===================================================================== -->
+  <!-- กล่องแสดงรูปภาพอาการ / การดูแลแบบป๊อปอับ (Image Viewer Modal)           -->
+  <!-- ===================================================================== -->
+  <div
+    id="imageViewerModal"
+    onclick="if(event.target === this) closeImageViewerModal()"
+    class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-between p-3 sm:p-5 transition-opacity select-none"
+  >
+    <!-- แถบด้านบน: หัวข้อ และปุ่มปิด -->
+    <div class="w-full max-w-2xl flex items-center justify-between text-white pb-3 border-b border-white/10 shrink-0">
+      <div class="flex items-center space-x-2.5">
+        <div class="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center text-sm">
+          📷
+        </div>
+        <div>
+          <h3 id="imageViewerTitle" class="text-xs sm:text-sm font-bold text-white">รูปภาพอาการ / การดูแล</h3>
+          <p id="imageViewerSubtitle" class="text-[10px] sm:text-xs text-slate-300">คลิกที่ภาพหรือปุ่มสลับเพื่อดูภาพอื่น หรือกดปิดเมื่อดูเสร็จ</p>
+        </div>
+      </div>
+      <button
+        type="button"
+        onclick="closeImageViewerModal()"
+        class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-semibold text-xs transition shadow-sm border border-white/10"
+      >
+        <span>✕</span>
+        <span>ปิด</span>
+      </button>
+    </div>
+
+    <!-- ส่วนแสดงรูปภาพตรงกลาง -->
+    <div class="w-full max-w-2xl flex-1 flex flex-col items-center justify-center p-2 min-h-0 relative my-auto">
+      <div class="relative max-h-full max-w-full flex items-center justify-center">
+        <img
+          id="imageViewerImg"
+          src=""
+          alt="รูปภาพอาการ"
+          class="max-h-[68vh] sm:max-h-[72vh] max-w-full object-contain rounded-2xl shadow-2xl border border-white/15 bg-black/50"
+        />
+      </div>
+
+      <!-- ปุ่มสลับภาพ (หากมีมากกว่า 1 ภาพ) -->
+      <div id="imageViewerNav" class="hidden items-center justify-center gap-3 mt-3 shrink-0">
+        <button
+          type="button"
+          onclick="prevImageViewerPhoto()"
+          class="px-3.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold transition border border-white/10 shadow-sm"
+        >
+          ‹ ภาพก่อนหน้า
+        </button>
+        <span id="imageViewerCounter" class="text-xs text-slate-200 font-bold px-3 py-1 bg-black/60 rounded-xl border border-white/10 shadow-sm">
+          1 / 1
+        </span>
+        <button
+          type="button"
+          onclick="nextImageViewerPhoto()"
+          class="px-3.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold transition border border-white/10 shadow-sm"
+        >
+          ภาพถัดไป ›
+        </button>
+      </div>
+    </div>
+
+    <!-- แถบด้านล่าง: ปุ่มปิดขนาดใหญ่ สะดวกสำหรับกดบนมือถือ -->
+    <div class="w-full max-w-2xl pt-3 border-t border-white/10 shrink-0 flex items-center justify-center">
+      <button
+        type="button"
+        onclick="closeImageViewerModal()"
+        class="w-full sm:w-auto sm:min-w-[200px] py-2.5 px-6 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs shadow-lg transition border border-white/10 flex items-center justify-center space-x-2"
+      >
+        <span>✕</span>
+        <span>ปิดหน้าต่าง</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
   <!-- ส่วน JavaScript หลัก (Configuration, LIFF Auth, API & UI Rendering)   -->
   <!-- ===================================================================== -->
   <script>
@@ -2343,10 +2418,10 @@
       // แสดงรูปภาพเดิมที่มีอยู่แล้ว (กรณีโหมดแก้ไขรายงาน)
       existingPhotoUrls.forEach(function (url, idx) {
         const box = document.createElement("div");
-        box.className = "relative rounded-xl overflow-hidden border border-slate-200 bg-white aspect-square";
+        box.className = "relative rounded-xl overflow-hidden border border-slate-200 bg-white aspect-square group";
         box.innerHTML = `
-          <img src="${escapeHtml(url)}" alt="Existing ${idx + 1}" class="w-full h-full object-cover" />
-          <span class="absolute bottom-1 left-1 bg-slate-900/70 text-white text-[10px] px-1.5 py-0.5 rounded-md">ภาพเดิม ${idx + 1}</span>
+          <img src="${escapeHtml(url)}" alt="Existing ${idx + 1}" onclick="openImageViewerModal('${escapeHtml(url)}', existingPhotoUrls, ${idx})" class="w-full h-full object-cover cursor-pointer transition group-hover:scale-105" title="คลิกเพื่อดูรูปขยาย" />
+          <span class="absolute bottom-1 left-1 bg-slate-900/70 text-white text-[10px] px-1.5 py-0.5 rounded-md pointer-events-none">ภาพเดิม ${idx + 1}</span>
           <button
             type="button"
             onclick="removeExistingPhotoAtIndex(${idx})"
@@ -2363,10 +2438,10 @@
       selectedPhotos.forEach(function (item, idx) {
         const displayIdx = existingPhotoUrls.length + idx + 1;
         const box = document.createElement("div");
-        box.className = "relative rounded-xl overflow-hidden border border-slate-200 bg-white aspect-square";
+        box.className = "relative rounded-xl overflow-hidden border border-slate-200 bg-white aspect-square group";
         box.innerHTML = `
-          <img src="${item.base64}" alt="Preview ${displayIdx}" class="w-full h-full object-cover" />
-          <span class="absolute bottom-1 left-1 bg-emerald-800/80 text-white text-[10px] px-1.5 py-0.5 rounded-md">ภาพที่ ${displayIdx}</span>
+          <img src="${item.base64}" alt="Preview ${displayIdx}" onclick="openImageViewerModal('${item.base64}')" class="w-full h-full object-cover cursor-pointer transition group-hover:scale-105" title="คลิกเพื่อดูรูปขยาย" />
+          <span class="absolute bottom-1 left-1 bg-emerald-800/80 text-white text-[10px] px-1.5 py-0.5 rounded-md pointer-events-none">ภาพที่ ${displayIdx}</span>
           <button
             type="button"
             onclick="removePhotoAtIndex(${idx})"
@@ -3887,28 +3962,47 @@
           </div>
         `;
 
-        // แสดงรูปภาพสูงสุด 3 ภาพ
+        // แสดงรูปภาพสูงสุด 3 ภาพ พร้อมเปิดเป็นป๊อปอับหน้าต่าง (Popup Modal) เมื่อคลิกดูภาพ
         const photoList = Array.isArray(r.photos) && r.photos.length > 0
           ? r.photos
           : [r.photo_url_1 || r.photo_url, r.photo_url_2, r.photo_url_3].filter(function (u) { return u && String(u).trim() !== ""; });
+
+        // บันทึกรายการรูปภาพของรายงานฉบับนี้ไว้ใน global store สำหรับเรียกดูในป๊อปอับ
+        window.__reportPhotos = window.__reportPhotos || {};
+        window.__reportPhotos[r.report_id] = photoList;
 
         let photoHtml = "";
         if (photoList.length === 1) {
           photoHtml = `
             <div class="pt-1">
-              <a href="${escapeHtml(photoList[0])}" target="_blank" rel="noopener">
-                <img src="${escapeHtml(photoList[0])}" alt="Symptom Photo 1" class="w-full max-h-60 object-cover rounded-xl border border-slate-200" />
-              </a>
+              <button
+                type="button"
+                onclick="openReportPhotoViewer('${escapeHtml(r.report_id)}', 0)"
+                class="block w-full text-left group relative rounded-xl overflow-hidden border border-slate-200 focus:outline-none transition hover:border-emerald-400 hover:shadow-md cursor-pointer"
+                title="คลิกเพื่อดูรูปภาพขนาดใหญ่"
+              >
+                <img src="${escapeHtml(photoList[0])}" alt="Symptom Photo 1" class="w-full max-h-60 object-cover rounded-xl transition duration-200 group-hover:scale-[1.01]" />
+                <span class="absolute bottom-2 right-2 bg-slate-900/80 backdrop-blur-sm text-white text-[11px] px-2.5 py-1 rounded-lg font-medium shadow flex items-center space-x-1.5 pointer-events-none">
+                  <span>🔍</span>
+                  <span>แตะดูรูปขยาย</span>
+                </span>
+              </button>
             </div>
           `;
         } else if (photoList.length > 1) {
           const gridCols = photoList.length === 2 ? "grid-cols-2" : "grid-cols-3";
           const imgs = photoList.map(function (url, idx) {
             return `
-              <a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="block relative rounded-xl overflow-hidden border border-slate-200 aspect-square bg-slate-100">
-                <img src="${escapeHtml(url)}" alt="Symptom Photo ${idx + 1}" class="w-full h-full object-cover" />
-                <span class="absolute bottom-1 right-1 bg-slate-900/70 text-white text-[10px] px-1.5 py-0.5 rounded-md">ภาพที่ ${idx + 1}</span>
-              </a>
+              <button
+                type="button"
+                onclick="openReportPhotoViewer('${escapeHtml(r.report_id)}', ${idx})"
+                class="block relative rounded-xl overflow-hidden border border-slate-200 aspect-square bg-slate-100 group focus:outline-none transition hover:border-emerald-400 hover:shadow-md cursor-pointer"
+                title="คลิกเพื่อดูภาพที่ ${idx + 1}"
+              >
+                <img src="${escapeHtml(url)}" alt="Symptom Photo ${idx + 1}" class="w-full h-full object-cover transition duration-200 group-hover:scale-105" />
+                <span class="absolute bottom-1 right-1 bg-slate-900/75 backdrop-blur-sm text-white text-[10px] px-1.5 py-0.5 rounded-md font-medium pointer-events-none">ภาพที่ ${idx + 1}</span>
+                <span class="absolute top-1 left-1 bg-emerald-600/90 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center opacity-90 shadow pointer-events-none">🔍</span>
+              </button>
             `;
           }).join("");
           photoHtml = `<div class="pt-1 grid ${gridCols} gap-2">${imgs}</div>`;
@@ -4066,6 +4160,97 @@
     function closeCaregiverInfoModal() {
       document.getElementById("caregiverInfoModal").classList.add("hidden");
     }
+
+    /**
+     * ========================================================================
+     * Popup Modal สำหรับดูรูปภาพอาการ / การดูแลขนาดใหญ่ พร้อมปุ่มปิด
+     * ========================================================================
+     */
+    let currentImageViewerList = [];
+    let currentImageViewerIndex = 0;
+
+    window.__reportPhotos = window.__reportPhotos || {};
+
+    function openReportPhotoViewer(reportId, idx) {
+      const list = (window.__reportPhotos && window.__reportPhotos[reportId]) || [];
+      if (list.length === 0) return;
+      const photoIndex = typeof idx === "number" ? idx : 0;
+      openImageViewerModal(list[photoIndex], list, photoIndex);
+    }
+
+    function openImageViewerModal(imgUrl, imgList, initialIndex) {
+      if (!imgUrl && (!imgList || imgList.length === 0)) return;
+
+      currentImageViewerList = Array.isArray(imgList) && imgList.length > 0 ? imgList : [imgUrl];
+      currentImageViewerIndex = typeof initialIndex === "number" && initialIndex >= 0 && initialIndex < currentImageViewerList.length
+        ? initialIndex
+        : Math.max(0, currentImageViewerList.indexOf(imgUrl));
+
+      updateImageViewerContent();
+
+      const modal = document.getElementById("imageViewerModal");
+      if (modal) {
+        modal.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+      }
+    }
+
+    function updateImageViewerContent() {
+      if (currentImageViewerList.length === 0) return;
+      const url = currentImageViewerList[currentImageViewerIndex];
+      const imgEl = document.getElementById("imageViewerImg");
+      const titleEl = document.getElementById("imageViewerTitle");
+      const counterEl = document.getElementById("imageViewerCounter");
+      const navEl = document.getElementById("imageViewerNav");
+
+      if (imgEl) {
+        imgEl.src = url;
+      }
+      if (titleEl) {
+        if (currentImageViewerList.length > 1) {
+          titleEl.textContent = `รูปภาพอาการ / การดูแล (ภาพที่ ${currentImageViewerIndex + 1} จาก ${currentImageViewerList.length})`;
+        } else {
+          titleEl.textContent = "รูปภาพอาการ / การดูแล";
+        }
+      }
+
+      if (navEl && counterEl) {
+        if (currentImageViewerList.length > 1) {
+          navEl.classList.remove("hidden");
+          navEl.classList.add("flex");
+          counterEl.textContent = `${currentImageViewerIndex + 1} / ${currentImageViewerList.length}`;
+        } else {
+          navEl.classList.add("hidden");
+          navEl.classList.remove("flex");
+        }
+      }
+    }
+
+    function nextImageViewerPhoto() {
+      if (currentImageViewerList.length <= 1) return;
+      currentImageViewerIndex = (currentImageViewerIndex + 1) % currentImageViewerList.length;
+      updateImageViewerContent();
+    }
+
+    function prevImageViewerPhoto() {
+      if (currentImageViewerList.length <= 1) return;
+      currentImageViewerIndex = (currentImageViewerIndex - 1 + currentImageViewerList.length) % currentImageViewerList.length;
+      updateImageViewerContent();
+    }
+
+    function closeImageViewerModal() {
+      const modal = document.getElementById("imageViewerModal");
+      if (modal) {
+        modal.classList.add("hidden");
+        document.body.style.overflow = "";
+      }
+    }
+
+    window.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        closeImageViewerModal();
+      }
+    });
 
     /**
      * แปลงข้อความหัวข้อการประเมิน 1-9 จาก symptoms_checklist ให้เป็น Object
