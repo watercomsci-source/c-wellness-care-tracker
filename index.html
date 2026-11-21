@@ -1592,7 +1592,8 @@
             await refreshUserContext();
             return;
           }
-        } catch (err) {
+        }
+      } catch (err) {
           console.warn("LIFF Init Fallback:", err.message);
         }
       }
