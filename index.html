@@ -1071,10 +1071,10 @@
         <div id="adminUsersList" class="space-y-2.5"></div>
       </div>
 
-      <!-- แท็บ Admin 2: จับคู่สิทธิ์ญาติคนไข้ (Relative_Access) & ตั้งค่า LINE Token -->
+      <!-- แท็บ Admin 2: จับคู่สิทธิ์ญาติคนไข้ (Relative_Access) -->
       <div id="admSectionAccess" class="hidden space-y-4">
-        <!-- กล่องตั้งค่า CHANNEL_ACCESS_TOKEN สำหรับส่งแจ้งเตือน LINE -->
-        <form onsubmit="handleAdminSaveLineToken(event)" class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-2.5">
+        <!-- กล่องตั้งค่า CHANNEL_ACCESS_TOKEN สำหรับส่งแจ้งเตือน LINE (ซ่อนไว้เนื่องจากกำหนดค่าในระบบเรียบร้อยแล้ว) -->
+        <form id="admLineTokenCard" onsubmit="handleAdminSaveLineToken(event)" class="hidden bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-2.5">
           <div class="flex items-center justify-between">
             <h2 class="text-sm font-semibold text-slate-800">🔔 ตั้งค่า LINE แจ้งเตือน (Messaging API)</h2>
             <span id="lineTokenStatusBadge" class="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800">
@@ -1088,7 +1088,6 @@
             <input
               type="password"
               id="admLineTokenInput"
-              required
               placeholder="วาง Channel Access Token ที่นี่..."
               class="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-mono"
             />
