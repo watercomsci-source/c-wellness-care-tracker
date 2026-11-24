@@ -536,14 +536,25 @@
             <h2 id="cgFormHeadingTitle" class="text-base font-semibold text-slate-800">บันทึกรายงานอาการประจำวัน</h2>
             <p id="cgFormHeadingSub" class="text-xs text-slate-400">ระบบจะส่ง LINE แจ้งเตือนญาติคนไข้อัตโนมัติหลังกดส่ง</p>
           </div>
-          <button
-            type="button"
-            onclick="handleBackFromSymptomForm()"
-            class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs whitespace-nowrap transition flex items-center space-x-1"
-          >
-            <span>←</span>
-            <span>ย้อนกลับ</span>
-          </button>
+          <div class="flex items-center gap-1.5">
+            <a
+              href="caregiver_guide_demo.html"
+              target="_blank"
+              class="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-xs transition flex items-center space-x-1"
+              title="เปิดดูวิดีโอสาธิตการใช้งาน"
+            >
+              <span>🎬</span>
+              <span>ดูสาธิต</span>
+            </a>
+            <button
+              type="button"
+              onclick="handleBackFromSymptomForm()"
+              class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs whitespace-nowrap transition flex items-center space-x-1"
+            >
+              <span>←</span>
+              <span>ย้อนกลับ</span>
+            </button>
+          </div>
         </div>
 
         <!-- แถบแจ้งสถานะเมื่ออยู่ในโหมดแก้ไขรายงานเดิม -->
