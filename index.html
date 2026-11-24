@@ -1113,9 +1113,9 @@
           </div>
 
           <div>
-            <label class="block text-xs font-medium text-slate-700 mb-1">เลือกผู้ใช้ (ญาติ) หรือระบุ LINE User ID <span class="text-rose-500">*</span></label>
+            <label class="block text-xs font-medium text-slate-700 mb-1">เลือกผู้ใช้ (เฉพาะสถานะญาติเท่านั้น) หรือระบุ LINE User ID <span class="text-rose-500">*</span></label>
             <select id="admAccUserSelect" onchange="document.getElementById('admAccLineId').value = this.value" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs mb-1.5">
-              <option value="">-- เลือกจากรายชื่อที่ลงทะเบียนแล้ว --</option>
+              <option value="">-- เลือกจากรายชื่อญาติคนไข้ที่ลงทะเบียนแล้ว --</option>
             </select>
             <input type="text" id="admAccLineId" required placeholder="LINE User ID (เช่น U123456...)" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-mono" />
           </div>
@@ -3324,11 +3324,21 @@
         patSel.appendChild(opt);
       });
 
-      usrSel.innerHTML = '<option value="">-- เลือกจากรายชื่อผู้ใช้ที่ลงทะเบียนแล้ว --</option>';
-      users.forEach(function (u) {
+      // กรองเฉพาะผู้ใช้งานที่มีสถานะเป็นญาติ (role === "RELATIVE")
+      const relativeUsers = (users || []).filter(function (u) {
+        return u.role === "RELATIVE";
+      });
+
+      usrSel.innerHTML = relativeUsers.length === 0
+        ? '<option value="">-- ไม่พบผู้ใช้งานที่มีสถานะญาติ (กรุณาให้ญาติลงทะเบียนก่อน) --</option>'
+        : '<option value="">-- เลือกจากรายชื่อญาติคนไข้ --</option>';
+
+      relativeUsers.forEach(function (u) {
         const opt = document.createElement("option");
         opt.value = u.line_user_id;
-        opt.textContent = `${u.full_name} (${u.role}) - ${u.line_user_id.slice(0, 10)}...`;
+        const statusBadge = u.status === "ACTIVE" ? "" : " [รออนุมัติ]";
+        const phoneTxt = u.phone ? ` (${u.phone})` : "";
+        opt.textContent = `${u.full_name} (ญาติ)${phoneTxt}${statusBadge}`;
         usrSel.appendChild(opt);
       });
 
@@ -3372,6 +3382,15 @@
       const patientId = document.getElementById("admAccPatientId").value;
       const lineId = document.getElementById("admAccLineId").value.trim();
       const relationship = document.getElementById("admAccRelation").value.trim();
+
+      // ตรวจสอบว่าผู้ใช้งานที่เลือกมีสถานะเป็นญาติจริงหรือไม่
+      const targetUser = (appState && appState.users || []).find(function (u) {
+        return u.line_user_id === lineId || u.user_id === lineId;
+      });
+      if (targetUser && targetUser.role !== "RELATIVE") {
+        showGlobalAlert("ผู้ใช้งานนี้มีสถานะเป็น " + targetUser.role + " ไม่สามารถผูกสิทธิ์ได้ (สามารถผูกสิทธิ์ได้เฉพาะผู้ใช้งานที่มีสถานะญาติเท่านั้น)", "error");
+        return;
+      }
 
       try {
         const res = await postToGas({
