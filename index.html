@@ -1113,11 +1113,11 @@
           </div>
 
           <div>
-            <label class="block text-xs font-medium text-slate-700 mb-1">เลือกผู้ใช้ (เฉพาะสถานะญาติเท่านั้น) หรือระบุ LINE User ID <span class="text-rose-500">*</span></label>
-            <select id="admAccUserSelect" onchange="document.getElementById('admAccLineId').value = this.value" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs mb-1.5">
-              <option value="">-- เลือกจากรายชื่อญาติคนไข้ที่ลงทะเบียนแล้ว --</option>
+            <label class="block text-xs font-medium text-slate-700 mb-1">เลือกญาติคนไข้ <span class="text-rose-500">*</span></label>
+            <select id="admAccUserSelect" onchange="document.getElementById('admAccLineId').value = this.value" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs">
+              <option value="">-- เลือกจากรายชื่อญาติคนไข้ --</option>
             </select>
-            <input type="text" id="admAccLineId" required placeholder="LINE User ID (เช่น U123456...)" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-mono" />
+            <input type="hidden" id="admAccLineId" required />
           </div>
 
           <div>
@@ -2330,7 +2330,7 @@
       activePatients.forEach(function (p) {
         const opt = document.createElement("option");
         opt.value = p.patient_id;
-        opt.textContent = `${p.full_name} (${p.patient_id}) - ${p.care_location || "ไม่ระบุห้อง"}`;
+        opt.textContent = p.full_name;
         selectEl.appendChild(opt);
       });
 
@@ -2351,7 +2351,7 @@
         filterPatients.forEach(function (p) {
           const fOpt = document.createElement("option");
           fOpt.value = p.patient_id;
-          fOpt.textContent = `${p.full_name} (${p.patient_id})`;
+          fOpt.textContent = p.full_name;
           filterEl.appendChild(fOpt);
         });
       }
@@ -2640,7 +2640,7 @@
         if (!hasOpt) {
           const extraOpt = document.createElement("option");
           extraOpt.value = r.patient_id;
-          extraOpt.textContent = (r.patient_name || r.patient_id) + " (" + r.patient_id + ")";
+          extraOpt.textContent = r.patient_name || r.patient_id;
           patSelect.appendChild(extraOpt);
         }
         patSelect.value = r.patient_id;
@@ -3320,7 +3320,7 @@
       patients.forEach(function (p) {
         const opt = document.createElement("option");
         opt.value = p.patient_id;
-        opt.textContent = `${p.full_name} (${p.patient_id})`;
+        opt.textContent = p.full_name;
         patSel.appendChild(opt);
       });
 
@@ -3337,8 +3337,7 @@
         const opt = document.createElement("option");
         opt.value = u.line_user_id;
         const statusBadge = u.status === "ACTIVE" ? "" : " [รออนุมัติ]";
-        const phoneTxt = u.phone ? ` (${u.phone})` : "";
-        opt.textContent = `${u.full_name} (ญาติ)${phoneTxt}${statusBadge}`;
+        opt.textContent = `${u.full_name}${statusBadge}`;
         usrSel.appendChild(opt);
       });
 
@@ -3361,9 +3360,8 @@
         item.className = "bg-white rounded-xl p-3.5 shadow-sm border border-slate-100 flex items-center justify-between text-xs";
         item.innerHTML = `
           <div class="space-y-0.5">
-            <p class="font-semibold text-slate-800">🛏️ คนไข้: ${escapeHtml(pName)} <span class="text-slate-400">(${escapeHtml(acc.patient_id)})</span></p>
+            <p class="font-semibold text-slate-800">🛏️ คนไข้: ${escapeHtml(pName)}</p>
             <p class="text-emerald-700 font-medium">👨‍👩‍👧 ญาติ: ${escapeHtml(uName)} (${escapeHtml(acc.relationship)})</p>
-            <p class="text-[10px] font-mono text-slate-400">${escapeHtml(acc.line_user_id)}</p>
           </div>
           <button
             type="button"
@@ -3382,6 +3380,15 @@
       const patientId = document.getElementById("admAccPatientId").value;
       const lineId = document.getElementById("admAccLineId").value.trim();
       const relationship = document.getElementById("admAccRelation").value.trim();
+
+      if (!patientId) {
+        showGlobalAlert("กรุณาเลือกคนไข้", "error");
+        return;
+      }
+      if (!lineId) {
+        showGlobalAlert("กรุณาเลือกญาติคนไข้", "error");
+        return;
+      }
 
       // ตรวจสอบว่าผู้ใช้งานที่เลือกมีสถานะเป็นญาติจริงหรือไม่
       const targetUser = (appState && appState.users || []).find(function (u) {
@@ -3529,7 +3536,7 @@
       patients.forEach(function (p) {
         const opt = document.createElement("option");
         opt.value = p.patient_id;
-        opt.textContent = `${p.full_name} (${p.patient_id})`;
+        opt.textContent = p.full_name;
         sel.appendChild(opt);
       });
       renderAdminReports();
