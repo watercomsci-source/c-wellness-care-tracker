@@ -1345,6 +1345,32 @@
   </div>
 
   <!-- ===================================================================== -->
+  <!-- กล่องข้อความแจ้งเตือน Popup Modal: กำลังบันทึก / กำลังแก้ไข...          -->
+  <!-- ===================================================================== -->
+  <div
+    id="savingLoadingModal"
+    class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-200"
+  >
+    <div class="bg-white rounded-3xl max-w-xs w-full p-6 shadow-2xl border border-slate-100 text-center space-y-4 transform transition-all">
+      <div id="savingModalIconContainer" class="mx-auto w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-inner">
+        <svg class="animate-spin h-9 w-9 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      </div>
+      <div class="space-y-1.5">
+        <h3 id="savingModalTitle" class="text-base font-bold text-slate-800">กำลังบันทึก...</h3>
+        <p id="savingModalMessage" class="text-xs text-slate-500 leading-relaxed">
+          กรุณารอสักครู่ ระบบกำลังบันทึกข้อมูล...
+        </p>
+      </div>
+      <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+        <div class="bg-emerald-500 h-full w-2/3 rounded-full animate-pulse"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
   <!-- กล่องข้อความแจ้งเตือน Popup Modal เมื่อกดบันทึกรายการสำเร็จ              -->
   <!-- ===================================================================== -->
   <div
@@ -2191,6 +2217,7 @@
       const btn = document.getElementById("btnSubmitCaregiverOnboarding");
       btn.disabled = true;
       btn.textContent = "⏳ กำลังอัปโหลดเอกสารและบันทึกข้อมูลพนักงาน...";
+      showSavingModal("save", "กรุณารอสักครู่ ระบบกำลังอัปโหลดเอกสารและบันทึกข้อมูลพนักงาน...");
 
       try {
         const res = await postToGas({
@@ -2236,6 +2263,7 @@
       } catch (err) {
         showGlobalAlert("เกิดข้อผิดพลาดในการบันทึกข้อมูลพนักงาน: " + err.message, "error");
       } finally {
+        closeSavingModal();
         btn.disabled = false;
         btn.textContent = "💾 บันทึกข้อมูลพนักงานและเข้าสู่ระบบรายงานอาการ";
       }
@@ -2278,6 +2306,7 @@
       } catch (err) {
         showGlobalAlert("เกิดข้อผิดพลาดในการเข้าสู่ระบบ: " + err.message, "error");
       } finally {
+        closeSavingModal();
         btn.disabled = false;
         btn.textContent = "เข้าสู่ระบบ";
       }
@@ -2298,6 +2327,7 @@
 
       btn.disabled = true;
       btn.textContent = "กำลังส่งข้อมูลลงทะเบียน...";
+      showSavingModal("save", "กรุณารอสักครู่ ระบบกำลังลงทะเบียนเข้าใช้งาน...");
 
       try {
         const result = await postToGas({
@@ -2327,6 +2357,7 @@
       } catch (err) {
         showGlobalAlert("เกิดข้อผิดพลาดในการส่งข้อมูลลงทะเบียน", "error");
       } finally {
+        closeSavingModal();
         btn.disabled = false;
         btn.textContent = "ส่งคำขอลงทะเบียน";
       }
@@ -2784,6 +2815,12 @@
         ? "⏳ กำลังบันทึกการแก้ไขรายงาน..."
         : "⏳ กำลังอัปโหลดข้อมูลและส่งแจ้งเตือน LINE...";
 
+      if (editReportId) {
+        showSavingModal("edit", "กรุณารอสักครู่ ระบบกำลังแก้ไขรายงานอาการ...");
+      } else {
+        showSavingModal("save", "กรุณารอสักครู่ ระบบกำลังบันทึกรายงานอาการและส่งแจ้งเตือน LINE...");
+      }
+
       try {
         const result = await postToGas({
           action: "submitSymptomReport",
@@ -2824,10 +2861,9 @@
               detailMsg += " — หมายเหตุ: " + notifyInfo.diagnosticNote;
             }
           }
-          showGlobalAlert("✅ " + detailMsg, "success");
-          showSaveSuccessModal("บันทึกเรียบร้อย", detailMsg);
-
           const wasEditing = Boolean(editReportId);
+          showGlobalAlert("✅ " + detailMsg, "success");
+          showSaveSuccessModal(wasEditing ? "แก้ไขเรียบร้อย" : "บันทึกเรียบร้อย", detailMsg);
           resetSymptomFormFields();
 
           appState = result.data;
@@ -2847,6 +2883,7 @@
       } catch (err) {
         showGlobalAlert("เกิดข้อผิดพลาดในการส่งรายงานอาการ", "error");
       } finally {
+        closeSavingModal();
         btn.disabled = false;
         if (!document.getElementById("editReportId").value) {
           btn.textContent = "📤 บันทึกรายงานและแจ้งเตือน LINE";
@@ -3105,6 +3142,7 @@
       const tokenVal = document.getElementById("admLineTokenInput").value.trim();
       if (!tokenVal) return;
 
+      showSavingModal("save", "กรุณารอสักครู่ ระบบกำลังบันทึก Channel Access Token...");
       try {
         const res = await postToGas({
           action: "adminSaveLineToken",
@@ -3123,6 +3161,8 @@
         }
       } catch (err) {
         showGlobalAlert("เกิดข้อผิดพลาดในการบันทึก Token", "error");
+      } finally {
+        closeSavingModal();
       }
     }
 
@@ -3288,6 +3328,7 @@
 
       btn.disabled = true;
       btn.textContent = "⏳ กำลังบันทึก...";
+      showSavingModal("edit", "กรุณารอสักครู่ ระบบกำลังแก้ไขสิทธิ์และสถานะผู้ใช้งาน...");
 
       try {
         const res = await postToGas({
@@ -3303,7 +3344,7 @@
           btn.textContent = "💾 บันทึกสิทธิ์ผู้ใช้งาน";
           btn.disabled = true;
           showGlobalAlert("✅ อัปเดตสิทธิ์ผู้ใช้งานเรียบร้อยแล้ว", "success");
-          showSaveSuccessModal("บันทึกเรียบร้อย", "อัปเดตสิทธิ์ผู้ใช้งานเรียบร้อยแล้ว");
+          showSaveSuccessModal("แก้ไขเรียบร้อย", "อัปเดตสิทธิ์และสถานะผู้ใช้งานเรียบร้อยแล้ว");
           appState = res.data;
           if (appState && appState.user && String(appState.user.role || "").trim().toUpperCase() !== "ADMIN") {
             routeViewByAuthState(appState);
@@ -3319,6 +3360,8 @@
         markUserPermissionDirty(targetUserId);
         btn.textContent = "💾 บันทึกสิทธิ์ผู้ใช้งาน";
         showGlobalAlert("เกิดข้อผิดพลาดในการอัปเดตผู้ใช้งาน", "error");
+      } finally {
+        closeSavingModal();
       }
     }
 
@@ -3441,6 +3484,7 @@
         return;
       }
 
+      showSavingModal("save", "กรุณารอสักครู่ ระบบกำลังบันทึกการจับคู่สิทธิ์ญาติ...");
       try {
         const res = await postToGas({
           action: "adminAddRelativeAccess",
@@ -3461,10 +3505,13 @@
         }
       } catch (err) {
         showGlobalAlert("เกิดข้อผิดพลาดในการจับคู่สิทธิ์ญาติ", "error");
+      } finally {
+        closeSavingModal();
       }
     }
 
     async function handleAdminDeleteAccess(accessId) {
+      showSavingModal("save", "กรุณารอสักครู่ ระบบกำลังยกเลิกสิทธิ์ญาติ...");
       try {
         const res = await postToGas({
           action: "adminDeleteRelativeAccess",
@@ -3482,6 +3529,8 @@
         }
       } catch (err) {
         showGlobalAlert("เกิดข้อผิดพลาดในการลบสิทธิ์ญาติ", "error");
+      } finally {
+        closeSavingModal();
       }
     }
 
@@ -3544,6 +3593,13 @@
 
     async function handleAdminSavePatient(event) {
       event.preventDefault();
+      const isEditPatient = Boolean(document.getElementById("admPatId").value.trim());
+      if (isEditPatient) {
+        showSavingModal("edit", "กรุณารอสักครู่ ระบบกำลังแก้ไขข้อมูลคนไข้...");
+      } else {
+        showSavingModal("save", "กรุณารอสักครู่ ระบบกำลังบันทึกข้อมูลคนไข้ใหม่...");
+      }
+
       try {
         const res = await postToGas({
           action: "adminSavePatient",
@@ -3559,7 +3615,7 @@
 
         if (res.status === "success") {
           showGlobalAlert("✅ " + res.message, "success");
-          showSaveSuccessModal("บันทึกเรียบร้อย", res.message || "บันทึกข้อมูลคนไข้เรียบร้อยแล้ว");
+          showSaveSuccessModal(isEditPatient ? "แก้ไขเรียบร้อย" : "บันทึกเรียบร้อย", res.message || (isEditPatient ? "แก้ไขข้อมูลคนไข้เรียบร้อยแล้ว" : "บันทึกข้อมูลคนไข้เรียบร้อยแล้ว"));
           resetAdminPatientForm();
           appState = res.data;
           populateCaregiverView(appState);
@@ -3569,6 +3625,8 @@
         }
       } catch (err) {
         showGlobalAlert("เกิดข้อผิดพลาดในการบันทึกข้อมูลคนไข้", "error");
+      } finally {
+        closeSavingModal();
       }
     }
 
@@ -4630,13 +4688,44 @@
       showGlobalAlert("คัดลอก LINE User ID (" + lineProfile.userId + ") แล้ว", "success");
     }
 
+    function showSavingModal(mode, customMsg) {
+      const modal = document.getElementById("savingLoadingModal");
+      const titleEl = document.getElementById("savingModalTitle");
+      const msgEl = document.getElementById("savingModalMessage");
+      const isEdit = (mode === "edit" || mode === "update");
+
+      if (titleEl) {
+        titleEl.textContent = isEdit ? "กำลังแก้ไข..." : "กำลังบันทึก...";
+      }
+      if (msgEl) {
+        msgEl.textContent = customMsg || (isEdit
+          ? "กรุณารอสักครู่ ระบบกำลังแก้ไขข้อมูล..."
+          : "กรุณารอสักครู่ ระบบกำลังบันทึกข้อมูล..."
+        );
+      }
+      if (modal) {
+        modal.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+      }
+    }
+
+    function closeSavingModal() {
+      const modal = document.getElementById("savingLoadingModal");
+      if (modal) {
+        modal.classList.add("hidden");
+        document.body.style.overflow = "";
+      }
+    }
+
     function showSaveSuccessModal(title, message) {
+      closeSavingModal();
       document.getElementById("saveModalTitle").textContent = title || "บันทึกเรียบร้อย";
       document.getElementById("saveModalMessage").textContent = message || "ระบบได้บันทึกข้อมูลของคุณลงฐานข้อมูลเรียบร้อยแล้ว";
       document.getElementById("saveSuccessModal").classList.remove("hidden");
     }
 
     function closeSaveSuccessModal() {
+      closeSavingModal();
       document.getElementById("saveSuccessModal").classList.add("hidden");
     }
 
